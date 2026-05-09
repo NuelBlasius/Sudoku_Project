@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sudoku 8x8 DLX Parallel</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <h2>Sudoku 8x8 DLX (Parallel)</h2>
+
+  <div id="timer">0 ms (0.00 sec)</div>
+  <div id="grid"></div>
+
+  <div class="controls">
+    <button onclick="startParallel()">Start</button>
+    <button onclick="resetGrid()">Reset</button>
+  </div>
+
+  <script>
+    const N = 8;
+    const boxR = 2;
+    const boxC = 4;
+    const SEED = 42;
+    window.STEP_DELAY = 0;
+  </script>
+
+  <script src="../script_parallel.js"></script>
+
+</body>
+</html>

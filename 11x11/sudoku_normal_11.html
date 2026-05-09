@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sudoku 11x11 DLX Normal</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <h2>Sudoku 11x11 DLX (Normal)</h2>
+
+  <div id="timer">0 ms (0.00 sec)</div>
+  <div id="grid"></div>
+
+  <div class="controls">
+    <button onclick="startNormal()">Start</button>
+    <button onclick="resetGrid()">Reset</button>
+  </div>
+
+  <script>
+    const N = 11;
+    const boxR = 1; // prime fallback
+    const boxC = 11;
+    const SEED = 42;
+    window.STEP_DELAY = 0;
+  </script>
+
+  <script src="../script_normal.js"></script>
+
+</body>
+</html>

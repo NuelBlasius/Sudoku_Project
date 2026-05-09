@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Sudoku 12x12 DLX Normal</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<h2>Sudoku 12x12 DLX (Normal)</h2>
+
+<div id="timer">0 ms (0.00 sec)</div>
+<div id="grid"></div>
+
+<div class="controls">
+  <button onclick="startNormal()">Start</button>
+  <button onclick="resetGrid()">Reset</button>
+</div>
+
+<script>
+  // Configuration for external script
+  const N = 12;
+  const boxR = 3;
+  const boxC = 4;
+  const SEED = 42;
+  window.STEP_DELAY = 0;
+</script>
+
+<script src="../script_normal.js"></script>
+
+</body>
+</html>
