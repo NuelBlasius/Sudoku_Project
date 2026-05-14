@@ -19,7 +19,7 @@ h2 {
 
 #grid {
   display: grid;
-  gap: 2px;
+  gap: 0px; /* remove gaps so borders align continuously */
   justify-content: center;
   margin: 0 auto 20px auto;
   width: fit-content;
@@ -32,9 +32,14 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #333;
   font-size: 16px;
   font-weight: bold;
+  box-sizing: border-box;
+  /* Draw only left/top by default so internal boundaries are single lines */
+  border-left: 1px solid #333;
+  border-top: 1px solid #333;
+  border-right: none;
+  border-bottom: none;
 }
 
 .cell.given {
@@ -67,3 +72,13 @@ button {
 button:hover {
   background-color: #fff;
 }
+
+/* Outer edges (right/bottom/left/top) */
+.cell.edge-left { border-left: 3px solid #999; }
+.cell.edge-top { border-top: 3px solid #999; }
+.cell.edge-right { border-right: 3px solid #999; }
+.cell.edge-bottom { border-bottom: 3px solid #999; }
+
+/* Block separators inside grid */
+.cell.block-left { border-left: 3px solid #999; }
+.cell.block-top { border-top: 3px solid #999; }

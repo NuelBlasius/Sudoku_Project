@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <title>Sudoku 16x16 DLX Parallel</title>
@@ -7,25 +7,25 @@
 </head>
 <body>
 
-  <h2>Sudoku 16x16 DLX (Parallel)</h2>
+<h2>Sudoku 16x16 DLX (Parallel)</h2>
 
-  <div id="timer">0 ms (0.00 sec)</div>
-  <div id="grid"></div>
+<div id="timer">0 ms (0.00 sec)</div>
+<div id="grid"></div>
 
-  <div class="controls">
-    <button onclick="startParallel()">Start</button>
-    <button onclick="resetGrid()">Reset</button>
-  </div>
+<div class="controls">
+  <button onclick="startParallel()">Start</button>
+  <button onclick="resetGrid()">Reset</button>
+</div>
 
-  <script>
-    const N = 16;
-    const boxR = 4;
-    const boxC = 4;
-    const SEED = 42;
-    window.STEP_DELAY = 0;
-  </script>
+<script>
+  const N = 16;
+  const boxR = 4;
+  const boxC = 4;
+  const SEED = 42;
+  window.STEP_DELAY = 0;
+</script>
 
-  <script src="../script_parallel.js"></script>
+<script src="../script_parallel.js"></script>
 
 </body>
 </html>

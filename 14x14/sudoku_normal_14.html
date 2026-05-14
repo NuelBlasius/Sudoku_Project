@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <title>Sudoku 14x14 DLX Normal</title>
@@ -7,25 +7,25 @@
 </head>
 <body>
 
-  <h2>Sudoku 14x14 DLX (Normal)</h2>
+<h2>Sudoku 14x14 DLX (Normal)</h2>
 
-  <div id="timer">0 ms (0.00 sec)</div>
-  <div id="grid"></div>
+<div id="timer">0 ms (0.00 sec)</div>
+<div id="grid"></div>
 
-  <div class="controls">
-    <button onclick="startNormal()">Start</button>
-    <button onclick="resetGrid()">Reset</button>
-  </div>
+<div class="controls">
+  <button onclick="startNormal()">Start</button>
+  <button onclick="resetGrid()">Reset</button>
+</div>
 
-  <script>
-    const N = 14;
-    const boxR = 2;
-    const boxC = 7;
-    const SEED = 42;
-    window.STEP_DELAY = 0;
-  </script>
+<script>
+  const N = 14;
+  const boxR = 2;
+  const boxC = 7;
+  const SEED = 42;
+  window.STEP_DELAY = 0;
+</script>
 
-  <script src="../script_normal.js"></script>
+<script src="../script_normal.js"></script>
 
 </body>
 </html>

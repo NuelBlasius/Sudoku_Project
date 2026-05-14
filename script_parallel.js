@@ -85,12 +85,26 @@ function initGrid() {
   grid.innerHTML = "";
   cells = [];
   grid.style.gridTemplateColumns = `repeat(${N}, 32px)`;
+  grid.style.gap = '0px';
 
   // Gunakan DocumentFragment untuk batch DOM insertion
   const fragment = document.createDocumentFragment();
   for (let i = 0; i < N * N; i++) {
+    let r = Math.floor(i / N);
+    let c = i % N;
     let d = document.createElement("div");
     d.className = "cell";
+
+    // Outer edges
+    if (c === 0) d.classList.add('edge-left');
+    if (r === 0) d.classList.add('edge-top');
+    if (c === N - 1) d.classList.add('edge-right');
+    if (r === N - 1) d.classList.add('edge-bottom');
+
+    // Block separators
+    if (c % boxC === 0 && c !== 0) d.classList.add('block-left');
+    if (r % boxR === 0 && r !== 0) d.classList.add('block-top');
+
     if (puzzle[i] !== 0) {
       d.textContent = puzzle[i];
       d.classList.add("given");
