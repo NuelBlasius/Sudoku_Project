@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 """
-sudoku_normal.py
+sudoku_parallel.py
 
-Generate and visualize an N x N Sudoku (br x bc blocks) and verify it using
-Dancing Links (DLX) + Algorithm X cover operations.
-
-This is a direct copy of dlx_sudoku_normal_81.py renamed to `sudoku_normal.py`.
+Copy of sudoku_normal.py with added parallel solving support (ProcessPoolExecutor).
 """
 
 try:
@@ -19,6 +16,9 @@ import argparse
 import math
 import sys
 import threading
+import concurrent.futures
+import multiprocessing
+import os
 
 
 class DLXNode:
@@ -450,6 +450,99 @@ def solve_backtracking(puzzle, N, br, bc, stop_event=None, time_limit=None):
     return [row[:] for row in grid] if solved else None
 
 
+# Parallel worker wrapper (top-level so it can be pickled)
+def _parallel_worker(args):
+    puzzle, N, br, bc, assign_rc, value, time_limit = args
+    r, c = assign_rc
+    pcopy = [row[:] for row in puzzle]
+    pcopy[r][c] = value
+    try:
+        return solve_backtracking(pcopy, N, br, bc, stop_event=None, time_limit=time_limit)
+    except Exception:
+        return None
+
+
+def solve_backtracking_parallel(puzzle, N, br, bc, max_workers=None, time_limit=None):
+    """Parallel wrapper: pick one MRV cell and spawn workers for each candidate.
+    Returns first found solution or None.
+    """
+    full_mask = (1 << N) - 1
+    numBoxesHoriz = N // bc
+    # build initial masks and empties (similar to sequential)
+    grid = [row[:] for row in puzzle]
+    row_mask = [0] * N
+    col_mask = [0] * N
+    box_mask = [0] * N
+    empties = []
+    for r in range(N):
+        for c in range(N):
+            v = grid[r][c]
+            b = (r // br) * numBoxesHoriz + (c // bc)
+            if v != 0:
+                bit = 1 << (v - 1)
+                if (row_mask[r] & bit) or (col_mask[c] & bit) or (box_mask[b] & bit):
+                    return None
+                row_mask[r] |= bit
+                col_mask[c] |= bit
+                box_mask[b] |= bit
+            else:
+                empties.append((r, c))
+
+    if not empties:
+        return [row[:] for row in grid]
+
+    # find MRV cell
+    best_mask = 0
+    best_count = N + 1
+    best_rc = None
+    for (rr, cc) in empties:
+        mask = full_mask & ~(row_mask[rr] | col_mask[cc] | box_mask[(rr // br) * numBoxesHoriz + (cc // bc)])
+        bc = mask.bit_count()
+        if bc == 0:
+            return None
+        if bc < best_count:
+            best_count = bc
+            best_mask = mask
+            best_rc = (rr, cc)
+            if bc == 1:
+                break
+
+    candidates = []
+    m = best_mask
+    while m:
+        vbit = m & -m
+        m -= vbit
+        candidates.append(vbit.bit_length())
+
+    if not candidates:
+        return None
+
+    if max_workers is None:
+        max_workers = max(1, (os.cpu_count() or 1))
+
+    # prepare tasks
+    tasks = []
+    for val in candidates:
+        tasks.append((puzzle, N, br, bc, best_rc, val, time_limit))
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=min(len(tasks), max_workers)) as exe:
+        futures = [exe.submit(_parallel_worker, t) for t in tasks]
+        for fut in concurrent.futures.as_completed(futures):
+            try:
+                res = fut.result()
+            except Exception:
+                res = None
+            if res:
+                # found a solution; attempt to cancel remaining
+                for f in futures:
+                    try:
+                        f.cancel()
+                    except Exception:
+                        pass
+                return res
+    return None
+
+
 def run_tk_solver_gui(puzzle, N, br, bc, cell_size=None, show_numbers=True):
     try:
         import tkinter as tk
@@ -458,7 +551,7 @@ def run_tk_solver_gui(puzzle, N, br, bc, cell_size=None, show_numbers=True):
         raise RuntimeError('Tkinter is not available in this Python environment') from e
 
     root = tk.Tk()
-    root.title(f'Sudoku Normal DLX Solver')
+    root.title(f'Sudoku Parallel Solver')
     # try start fullscreen; user can toggle with the button or ESC
     fullscreen_state = False
     try:
@@ -493,7 +586,7 @@ def run_tk_solver_gui(puzzle, N, br, bc, cell_size=None, show_numbers=True):
 
     top_frame = tk.Frame(root)
     top_frame.pack(side='top', fill='x', pady=8)
-    title_lbl = tk.Label(top_frame, text=f'Sudoku Normal DLX Solver', font=('Helvetica', 18, 'bold'))
+    title_lbl = tk.Label(top_frame, text=f'Sudoku Parallel Solver', font=('Helvetica', 18, 'bold'))
     title_lbl.pack(side='left')
     time_var = tk.StringVar(value='0 ms (0.00 sec)')
     time_lbl = tk.Label(top_frame, textvariable=time_var, font=('Helvetica', 12))
@@ -609,7 +702,7 @@ def run_tk_solver_gui(puzzle, N, br, bc, cell_size=None, show_numbers=True):
     remove_scale.pack(side='left', padx=4)
 
     # zoom slider (cell size)
-    zoom_var = tk.IntVar(value=(cell_size if cell_size is not None else max(6, int(min((screen_w - margin_w) / N, (screen_h - margin_h) / N)))))
+    zoom_var = tk.IntVar(value=(cell_size if cell_size is not None else max(6, int(min((screen_w - margin_w) / N, (screen_h - margin_h) / N)))) )
     tk.Label(ctrl_frame, text='Zoom:').pack(side='left', padx=(8,0))
     zoom_scale = tk.Scale(ctrl_frame, variable=zoom_var, from_=6, to=80, orient='horizontal', length=180)
     zoom_scale.pack(side='left', padx=4)
@@ -664,7 +757,7 @@ def run_tk_solver_gui(puzzle, N, br, bc, cell_size=None, show_numbers=True):
         current_grid = [row[:] for row in puzzle_new]
         # update initial givens and drawing helper sizes
         initial_givens = [row[:] for row in puzzle_new]
-        # remember the full solution corresponding to this puzzle (guaranteed solvable)
+        # remember full solution for this generated puzzle (guaranteed solvable)
         current_solution = [row[:] for row in sol_new]
         rect_ids = [[None]*N for _ in range(N)]
         text_ids = [[None]*N for _ in range(N)]
@@ -871,6 +964,8 @@ def parse_args():
     p.add_argument('--cell-size', type=int, default=None, help='Cell pixel size for image (default: auto)')
     p.add_argument('--show-numbers', action='store_true', help='Render numbers into image (slow)')
     p.add_argument('--solve', action='store_true', help='Solve generated puzzle in non-GUI mode')
+    p.add_argument('--parallel', action='store_true', help='Use parallel solving (non-GUI)')
+    p.add_argument('--workers', type=int, default=None, help='Number of worker processes for parallel solving')
     group = p.add_mutually_exclusive_group()
     group.add_argument('--gui', dest='gui', action='store_true', help='Show grid using tkinter instead of saving image')
     group.add_argument('--no-gui', dest='gui', action='store_false', help='Do not show GUI; run in console mode')
@@ -929,7 +1024,7 @@ def main():
     if br * bc != N:
         print('Error: must satisfy br * bc == N')
         sys.exit(1)
-    # generate a full solution then produce a puzzle from it; keep the full solution as fallback
+    # generate a full solution, randomize it for variety, and keep it as fallback
     sol_base = generate_solution(N, br, bc)
     try:
         sol_gen = randomize_solution(sol_base, br, bc, seed=None)
@@ -941,10 +1036,13 @@ def main():
         run_tk_solver_gui(blank_puzzle, N, br, bc, cell_size=args.cell_size, show_numbers=True)
         return
     if getattr(args, 'solve', False):
-        # Solve the generated puzzle using the optimized backtracking solver
+        # Solve the generated puzzle using the optimized backtracking solver (parallel optional)
         print(f'Solving {N}x{N} puzzle (remove-rate={args.remove_rate})...')
         t0 = time.perf_counter()
-        sol_grid = solve_backtracking(puzzle_generated, N, br, bc)
+        if getattr(args, 'parallel', False):
+            sol_grid = solve_backtracking_parallel(puzzle_generated, N, br, bc, max_workers=args.workers)
+        else:
+            sol_grid = solve_backtracking(puzzle_generated, N, br, bc)
         t1 = time.perf_counter()
         if sol_grid:
             elapsed = t1 - t0
@@ -953,7 +1051,7 @@ def main():
                 out = visualize_grid(sol_grid, br, bc, cell_size=args.cell_size, show_numbers=args.show_numbers, outpath=args.out)
                 print('Saved visualization to', out)
         else:
-            # fallback: use the generated full solution (guaranteed solvable)
+            # fallback to generated full solution if solver failed
             print('Solver did not find a solution; using generated solution as fallback')
             sol_grid = sol_gen
             if PIL_AVAILABLE:
@@ -975,5 +1073,11 @@ def main():
     else:
         print('Pillow not installed; skipping image rendering. Install with: pip install pillow')
 
+
 if __name__ == '__main__':
+    # Multiprocessing on Windows requires the freeze_support() call
+    try:
+        multiprocessing.freeze_support()
+    except Exception:
+        pass
     main()
